@@ -1,3 +1,6 @@
+big_map_screenshot
+a tool can screenshot base on big map with marks/一个可以在地图上带标注点进行截图拼接工具
+
 使用说明
 1，访问getlnglat.htmlyem
 2，在输入框中输入deme.data文件中一样格式的数据，注意结尾中有个逗号。
