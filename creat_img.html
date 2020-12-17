@@ -21,10 +21,10 @@
 		<div class="markerIcon"><img src="img/marker-icon.png" id="markerIcon"></div>
 		<script src="https://cdn.staticfile.org/jquery/1.9.1/jquery.min.js"></script>
 		<script src="js/leaflet-src.js"></script>
-		<script src="https://app.iuu.travel/js/config.js"></script>
+		<script src="js/config.js"></script>
 		<script>
-			var mapZoom = IUU.getUrlParam("zoom");
-			var fontSizePx = IUU.getUrlParam("fontSize") || 30;
+			var mapZoom = SKEET.getUrlParam("zoom");
+			var fontSizePx = SKEET.getUrlParam("fontSize") || 30;
 
 			function getParam(name, strurl) {
 				var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
@@ -47,14 +47,14 @@
 				zoom: mapZoom
 			});
 			$("#map").hide();
-			var page = IUU.getUrlParam("page") * 1;
-			var leftx = IUU.getUrlParam("leftx") * 1;
+			var page = SKEET.getUrlParam("page") * 1;
+			var leftx = SKEET.getUrlParam("leftx") * 1;
 			if(page > 1) {
 				leftx = leftx - 1;
 			}
-			var lefty = IUU.getUrlParam("lefty") * 1;
-			var rightx = IUU.getUrlParam("rightx") * 1;
-			var righty = IUU.getUrlParam("righty") * 1;
+			var lefty = SKEET.getUrlParam("lefty") * 1;
+			var rightx = SKEET.getUrlParam("rightx") * 1;
+			var righty = SKEET.getUrlParam("righty") * 1;
 			var myCanvas = document.createElement('canvas');
 			myCanvas.id = "myCanvas";
 			myCanvas.width = (rightx - leftx + 1) * 256;
@@ -83,7 +83,7 @@
 			}
 
 			function getFont() {
-				var markerData = IUU.getUrlParam("arr");
+				var markerData = SKEET.getUrlParam("arr");
 				if(markerData) {
 					var markers = eval("[" + markerData.substring(0, markerData.length - 1) + "]");
 					map.setView([26.083406, 119.29658], mapZoom);
