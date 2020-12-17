@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>获取截图</title>
+		<link rel="stylesheet" href="https://cdn.staticfile.org/leaflet/1.0.2/leaflet.css">
+	</head>
+	<style>
+		* {
+			padding: 0px;
+			margin: 0px;
+		}
+		
+		#map {
+			position: absolute;
+			left: 0;
+			top: 0px;
+			right: 0;
+			bottom: 0px;
+			z-index: 1;
+			min-height: 100px;
+			background: #f4f7fb;
+		}
+		
+		.leaflet-tooltip {
+			background: transparent !important;
+			color: #FF0000;
+			text-shadow: 1px 1px #FFFFFF;
+			font-size: 24px;
+			font-weight: bold;
+			border: none !important;
+		}
+	</style>
+
+	<body>
+		<div id="map"></div>
+		<script src="https://cdn.staticfile.org/jquery/1.9.1/jquery.min.js"></script>
+		<script src="js/leaflet-src.js"></script>
+		<script src="https://app.iuu.travel/js/config.js"></script>
+		<script>
+			var api = new IUU.APIURL();
+			var markers = eval("[" + IUU.getUrlParam("marker") + "]");
+			var map = L.map('map', {
+				//layers: layer,
+				maxZoom: 19,
+				attributionControl: false,
+				zoomControl: false,
+				minZoom: 5,
+				//dragging: false
+			});
+			var leftLatLng = L.latLng(markers[markers.length - 2][2], markers[markers.length - 2][1]);
+			var rightLatLng = L.latLng(markers[markers.length - 1][2], markers[markers.length - 1][1]);
+			var centerLat = (leftLatLng.lat + rightLatLng.lat) / 2;
+			var centerLng = (leftLatLng.lng + rightLatLng.lng) / 2;
+			map.setView([centerLat, centerLng], 19);
+			var bounds = [
+				leftLatLng,
+				rightLatLng
+			]
+			//map.setMaxBounds(bounds);
+			L.tileLayer("https://mt2.google.cn/vt/lyrs=y@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
+				maxZoom: 20,
+				minZoom: 1,
+				bounds: bounds
+			}).addTo(map);
+
+			//			//
+			//			L.tileLayer("http://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=8&ltype=11", {
+			//				maxZoom: 20,
+			//				minZoom: 1,
+			//				bounds: bounds
+			//			}).addTo(map);
+			var maskingTiles = new L.TileLayer("https://mt2.google.cn/vt/lyrs=m@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
+				maxZoom: 20,
+				minZoom: 1,
+				bounds: bounds
+			});
+			maskingTiles.createTile = function(coords) {
+				//console.log(coords);
+				var tile = document.createElement('div');
+				tile.innerHTML = [coords.x, coords.y, coords.z].join(', ');
+				tile.style.border = '1px solid red';
+				tile.style.color = 'red';
+				return tile;
+			}
+			maskingTiles.addTo(self.map);
+
+			function getPointXY(latLng) {
+				var lat = latLng.lat;
+				var lng = latLng.lng;
+				var x = (lng + 180) / 360 * Math.pow(2, map.getZoom());
+				var y = Math.tan(lat * Math.PI / 180);
+				y = y * 1 + 1 / Math.cos(lat * Math.PI / 180);
+				y = Math.log(y) / (2 * Math.PI);
+				y = (0.5 - y) * Math.pow(2, map.getZoom());
+				return {
+					x: Math.floor(x),
+					y: Math.floor(y)
+				};
+			}
+
+			function clearMap() {
+				$(".tileButton").remove();
+				//清除地图上所有数据
+				map.eachLayer(function(layer) {
+					layer.remove();
+				});
+			}
+
+			function creatMapZoom() {
+				clearMap();
+				L.tileLayer("https://mt2.google.cn/vt/lyrs=y@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
+					maxZoom: 20,
+					minZoom: 1,
+					bounds: bounds
+				}).addTo(map);
+				var leftImgXY = getPointXY(leftLatLng);
+				var rightImgXY = getPointXY(rightLatLng);
+				var leftPoint = map.latLngToLayerPoint(leftLatLng);
+				var rightPoint = map.latLngToLayerPoint(rightLatLng);
+				var width = rightPoint.x - leftPoint.x;
+				var height = leftPoint.y - rightPoint.y;
+				var imgMaxWidth = rightImgXY.x - leftImgXY.x + 1;
+				var rows = Math.floor($(window).width() / 256) - 2; //一个屏幕能显示多少个图片
+				var pageCount = Math.ceil((rightImgXY.x - leftImgXY.x + 1) / rows); //显示多少个页面
+				for(var i = 0; i < markers.length; i++) {
+					var _data = markers[i];
+					//console.log(markers[i]);
+					var _marker = L.marker([_data[2], _data[1]]).addTo(map).bindTooltip(i + " " + _data[0], {
+						permanent: true,
+						interactive: true
+					});
+					//console.log(_marker);
+				}
+				for(var i = 1; i <= pageCount; i++) {
+					var leftx = leftImgXY.x + (i - 1) * rows;
+					var lefty = rightImgXY.y;
+					var rightx = leftImgXY.x + i * rows;
+					var righty = leftImgXY.y;
+					var arr = "";
+					for(var j = 0; j < markers.length; j++) {
+						var _data = markers[j];
+						var _latLng = L.latLng(_data[2], _data[1]);
+						var _pointXY = getPointXY(_latLng);
+						//console.log(_data[0], _pointXY, leftx, lefty, rightx, righty);
+						if(_pointXY.x >= leftx && _pointXY.x < rightx && _pointXY.y >= lefty && _pointXY.y < righty) {
+							arr += "[\"" + (j + 1) + " " + _data[0] + "\"," + _data[1] + "," + _data[2] + "],";
+						}
+					}
+					//console.log(arr);
+					var strUrl = "creat_img.html?";
+					strUrl += "page=" + i;
+					strUrl += "&fontSize=" + 30;
+					strUrl += "&leftx=" + leftx + "&lefty=" + lefty;
+					strUrl += "&rightx=" + rightx + "&righty=" + righty;
+					strUrl += "&arr=" + IUU.getUrlParam("marker"); //arr
+					strUrl += "&zoom=" + map.getZoom();
+					//console.log(strUrl);
+					var tile = document.createElement('div');
+					var optStyle = "position:absolute;z-index: 9999;top:" + 25 * i + "px";
+					tile.setAttribute("style", optStyle);
+					tile.className = "tileButton";
+					tile.innerHTML = "<input type='button' value='打开新窗口" + i + "' data-href='" + strUrl + "' id='button" + i + "'>";
+					document.body.appendChild(tile);
+					$('#button' + i).click(function() {
+						//console.log($(this).data("href"));
+						window.open($(this).data("href"), "_blank");
+					});
+				}
+			}
+			creatMapZoom();
+			map.on('zoomend zoomlevelschange', function(e) {
+				creatMapZoom();
+			});
+		</script>
+	</body>
+
+</html>

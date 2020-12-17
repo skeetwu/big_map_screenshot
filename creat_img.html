@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>创建图片</title>
+		<style>
+			* {
+				margin: 0px;
+				padding: 0px;
+			}
+			
+			.markerIcon {
+				display: none;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="map"></div>
+		<div class="markerIcon"><img src="img/marker-icon.png" id="markerIcon"></div>
+		<script src="https://cdn.staticfile.org/jquery/1.9.1/jquery.min.js"></script>
+		<script src="js/leaflet-src.js"></script>
+		<script src="https://app.iuu.travel/js/config.js"></script>
+		<script>
+			var mapZoom = IUU.getUrlParam("zoom");
+			var fontSizePx = IUU.getUrlParam("fontSize") || 30;
+
+			function getParam(name, strurl) {
+				var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+				var r = strurl.substr(1).match(reg); //匹配目标参数
+				return r ? decodeURI(r[2]) : null;
+			}
+
+			function pointXYToLatLng(x, y) {
+				var lng = x / Math.pow(2, mapZoom) * 360 - 180;
+				var lat = Math.atan(Math.sinh(Math.PI - 2 * Math.PI * y / Math.pow(2, mapZoom))) * 180 / Math.PI;
+				return L.latLng(lat, lng);
+			}
+			var map = L.map('map', {
+				//layers: layer,
+				maxZoom: 19,
+				attributionControl: false,
+				zoomControl: false,
+				minZoom: 5,
+				dragging: false,
+				zoom: mapZoom
+			});
+			$("#map").hide();
+			var page = IUU.getUrlParam("page") * 1;
+			var leftx = IUU.getUrlParam("leftx") * 1;
+			if(page > 1) {
+				leftx = leftx - 1;
+			}
+			var lefty = IUU.getUrlParam("lefty") * 1;
+			var rightx = IUU.getUrlParam("rightx") * 1;
+			var righty = IUU.getUrlParam("righty") * 1;
+			var myCanvas = document.createElement('canvas');
+			myCanvas.id = "myCanvas";
+			myCanvas.width = (rightx - leftx + 1) * 256;
+			myCanvas.height = (righty - lefty + 1) * 256;
+			//myCanvas.style.border = "1px solid";
+			$(document.body).append(myCanvas);
+			var c = document.getElementById("myCanvas");
+			var ctx = myCanvas.getContext("2d");
+			var imgI = 0;
+			for(var i = lefty; i <= righty; i++) {
+				for(var j = leftx; j <= rightx; j++) {
+					var img = new Image();
+					img.src = "https://mt2.google.cn/vt/lyrs=y@142&hl=zh-CN&gl=CN&x=" + j + "&y=" + i + "&z=" + mapZoom + "&s=Galil";
+					img.id = "img" + j + "_" + i;
+					img.onload = function() {
+						imgI++;
+						var j = getParam("x", this.src);
+						var i = getParam("y", this.src);
+						ctx.drawImage(this, 0, 0, 256, 256, (j - leftx) * 256, (i - lefty) * 256, 256, 256);
+						if((righty - lefty + 1) * (rightx - leftx + 1) === imgI) {
+							getFont();
+						}
+					}
+
+				}
+			}
+
+			function getFont() {
+				var markerData = IUU.getUrlParam("arr");
+				if(markerData) {
+					var markers = eval("[" + markerData.substring(0, markerData.length - 1) + "]");
+					map.setView([26.083406, 119.29658], mapZoom);
+					var leftLatLng = pointXYToLatLng(leftx, lefty);
+					var leftPoint = map.latLngToLayerPoint(leftLatLng);
+					for(var j = 0; j < markers.length; j++) {
+						var _data = markers[j];
+						var _latLng = L.latLng(_data[2], _data[1]);
+						var _pointXY = map.latLngToLayerPoint(_latLng);
+						console.log(_pointXY.y - leftPoint.y);
+						//marker-icon.png
+						var img = document.getElementById("markerIcon");
+						ctx.drawImage(img, _pointXY.x - leftPoint.x - 15, _pointXY.y - leftPoint.y - 41, 25, 41);
+						ctx.font = fontSizePx + "px 微软雅黑";
+						ctx.fillStyle = "#FFFFFF";
+						ctx.fontWeight = "bold";
+						ctx.fillText((j + 1) + " " + _data[0], _pointXY.x - leftPoint.x + 20, _pointXY.y - leftPoint.y - 10);
+						ctx.font = fontSizePx + "px 微软雅黑";
+						ctx.fillStyle = "red";
+						ctx.fillText((j + 1) + " " + _data[0], _pointXY.x - leftPoint.x + 1 + 20, _pointXY.y - leftPoint.y + 1 - 10);
+					}
+				}
+			}
+		</script>
+	</body>
+
+</html>

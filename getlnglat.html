@@ -1,0 +1,330 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>获取经纬度坐标</title>
+		<link rel="stylesheet" href="css/main1119.css" />
+	</head>
+
+	<body>
+		<div id="container"></div>
+		<div id="panel">
+			<div class="button-group-right">
+				<input type="button" class="button" id="sbutton" value="隐藏" />
+				<input type="button" class="button" id="scenicclone" value="复制标记点坐标" />
+			</div>
+			<div class="button-group-left">
+				<input type="button" class="button" value="切换卫星地图" onClick="setTileLayer()" />
+				<input type="button" class="button" value="隐藏线路" onClick="roadHide()" />
+				<input type="button" class="button" value="定位地图" onClick="setlnglat()" />
+				<input type="button" class="button" value="重新赋值后刷新" onClick="editor.oK(lineArr,true)" />
+				<input type="button" class="button" id="scenicMarkerAdd" value="增加景点信息">
+				<input type="button" class="button" id="txtclone" value="复制文本框内容" />
+				<input type="button" class="button" onClick="getMapImgs()" value="打开截图">
+			</div>
+			<textarea id="point-array" placeholder='增加景点的格式为：["1世纪公园",120.395846,36.286007],["2大明湖",120.395183,36.285898];增加路线的格式为[120.395846,36.286007],[120.395183,36.285898]' style="position: fixed; z-index:1000;bottom:55px;left:10px;width:20%;height:100px;"></textarea>
+		</div>
+		<script src="js/jquery.min.js" type="text/javascript"></script>
+		<script src="js/layer/layer.js" type="text/javascript"></script>
+		<script src="js/jquery.zclip.min.js" type="text/javascript"></script>
+		<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.3&key=76269cd9c5b72da95424f0e16cdca0d0&plugin=AMap.Geocoder,AMap.PlaceSearch,AMap.PolyEditor,AMap.CircleEditor,AMap.TileLayer,AMap.Riding,AMap.Scale"></script>
+		<script src="js/myfunction.js"></script>
+		<script type="text/javascript">
+			$("#sbutton").click(function() {
+				//console.log($("#sbutton").val());
+				if($("#sbutton").val() == "隐藏") {
+					$(".button-group-left").hide();
+					$("#scenicclone").hide();
+					$("#point-array").hide();
+					$("#sbutton").val("显示");
+				} else {
+					$(".button-group-left").show();
+					$("#scenicclone").show();
+					$("#point-array").show();
+					$("#sbutton").val("隐藏");
+				}
+			});
+			var marker, polyLine;
+			var lnglat = [120.395846, 36.286007]; //new Array();
+			var map = new AMap.Map("container", {
+				resizeEnable: true,
+				center: lnglat, //[120.395846, 36.286007], //地图中心点
+				expandZoomRange: true,
+				zooms: [15, 23] //地图显示的缩放级别
+			});
+			var scale = new AMap.Scale({
+				visible: true,
+				position: "RB"
+			});
+			scale.show()
+			map.addControl(scale);
+			var info = "";
+			var infoWindow = new AMap.InfoWindow({
+				content: info + "<br/>", //使用默认信息窗体框样式，显示信息内容
+				offset: {
+					x: 0,
+					y: -30
+				}
+			});
+			var marker = new AMap.Marker({
+				map: map,
+				position: lnglat,
+				draggable: true
+			});
+			marker.on('click', function() {
+				//构建信息窗体中显示的内容
+				info = "[" + marker.getPosition().lng + "," + marker.getPosition().lat + "]";
+				infoWindow.setContent(info + "<br>");
+				infoWindow.open(map, marker.getPosition());
+			});
+			marker.on("dragstart", function() {
+				if(infoWindow.getIsOpen()) {
+					infoWindow.close();
+				}
+			});
+			marker.on("dragend", function() {
+				this.setLabel({
+					content: "[" + this.getPosition().lng + "," + this.getPosition().lat + "]"
+				});
+
+			});
+			$("#scenicclone").zclip({
+				path: 'js/ZeroClipboard.swf',
+				copy: function() {
+					//console.log(marker.getLabel());
+					return "[" + marker.getPosition().lng + "," + marker.getPosition().lat + "]";
+				},
+				afterCopy: function() {
+					/* 复制成功后的操作 */
+					layer.msg('复制景点坐标成功！粘贴到你想粘贴的地方去吧!', {
+						time: 1000
+					})
+				}
+			});
+			//[111.067674,30.658623][116.885551,36.247535]
+			function setlnglat() {
+				layer.prompt({
+					title: '输入你要打开的位置经度维度，以逗号隔开 ',
+					formType: 3,
+					value: lnglat[0] + "," + lnglat[1]
+				}, function(lnglatXY, index) {
+					layer.close(index);
+					lnglat = lnglatXY.split(",");
+					$("#container").width(getWidth(0));
+					$("#container").height(getHeight(0));
+					if(lnglat.length < 2) {
+						alert("请先输入你的地图坐标" + lnglat)
+						return;
+					}
+					map.setCenter(lnglat);
+					setlnglatXY();
+				});
+			}
+			$(window).bind('resize ', function() {
+				$("#container").width(getWidth(0));
+				$("#container").height(getHeight(0));
+			});
+			var start = false;
+			//在地图上绘制折线
+			var editor = {};
+			editor._line = function(temp) {
+				var polyLine = new AMap.Polyline({
+					map: map,
+					path: temp,
+					strokeColor: "#FF33FF", //线颜色
+					strokeOpacity: 1, //线透明度
+					strokeWeight: 3, //线宽
+					strokeStyle: "solid" //线样式
+				});
+				return polyLine;
+			};
+			var lineArr = new Array();
+			var _json = new Array();
+			var clickNum = 0;
+			map.setFitView();
+			editor.oK = function(temp, b) {
+				map.clearMap();
+				if(b && $('#point-array ').val() != "") {
+					temp = eval("[" + $('#point-array ').val() + "]");
+					//console.log(temp.length);
+					lineArr = temp;
+				}
+				editor.startEditLine();
+				var _lnglat = temp[0];
+				getDistance(_lnglat);
+				var strLineArr = temp.join("+");
+				var pointArr = strLineArr.split("+");
+				var text = "";
+				for(var i = 0; i < pointArr.length; i++) {
+					var lnglat = pointArr[i].split(",");
+					text += (i === 0) ? ("[" + lnglat[0] + "," + lnglat[1] + "]") : (",[" + lnglat[0] + "," + lnglat[1] + "]");
+				}
+
+				//document.getElementById('point-array ').style.display = document.getElementById('point-array ').style.display === "none" ? "block" : "none";
+				$('#point-array ').val(text);
+			}
+			editor.startEditLine = function() {
+				editor._lineEditor = new AMap.PolyEditor(map, editor._line(lineArr));
+				editor._lineEditor.open();
+				AMap.event.addListener(editor._lineEditor, "adjust", function(e) {
+					editor.oK(lineArr, false);
+				});
+				AMap.event.addListener(editor._lineEditor, "removenode", function(e) {
+					editor.oK(lineArr, false);
+				});
+				AMap.event.addListener(editor._lineEditor, "addnode", function(e) {
+					editor.oK(lineArr, false);
+				});
+				marker.setMap(map);
+				marker.setPosition(lnglat);
+				//editor._line(lineArr);
+			}
+
+			function getDistance(_lnglat) {
+				// 设置label标签
+				//console.log(lnglat[0]+"---"+lnglat[1]);
+				var $_lnglat = new AMap.LngLat(lnglat[0], lnglat[1]);
+				var _distance = $_lnglat.distance([_lnglat.lng, _lnglat.lat]);
+				if(_distance > 3000) {
+					map.setCenter(_lnglat);
+				}
+			}
+
+			function setlnglatXY() {
+				var geocoder = new AMap.Geocoder({
+					radius: 1000,
+					extensions: "all"
+				});
+				geocoder.getAddress(lnglat, function(status, result) {
+					var _array = "[" + lnglat[0] + "," + lnglat[1] + "],";
+					if(status === 'complete ' && result.info === 'OK ' && result.regeocode.pois.length > 0) {
+						var _lng = result.regeocode.pois[0].location.lng;
+						var _lat = result.regeocode.pois[0].location.lat;
+						_array += "[" + _lng + "," + _lat + "]";
+						//_array+="["+lnglat[0]+","+(lnglat[1]*1+0.001)+"]";
+						//console.log([_lng,_lat],[lnglat[0],lnglat[1]]);
+						//console.log(result.regeocode.pois[0]);
+						//console.log(result.regeocode.pois[result.regeocode.pois.length-1]);
+					} else {
+						_array += "[" + lnglat[0] + "," + (lnglat[1] * 1 + 0.001) + "]";
+					}
+					$('#point-array ').val(_array);
+					editor.oK(lineArr, true);
+				});
+			}
+			$("#txtclone").zclip({
+				path: 'js/ZeroClipboard.swf',
+				copy: function() {
+					return $('#point-array ').val();
+				},
+				afterCopy: function() {
+					/* 复制成功后的操作 */
+					layer.alert('复制成功！粘贴到你想粘贴的地方去吧！ ', {
+						icon: 1,
+						skin: 'layer-ext-moon '
+					})
+				}
+			});
+			var roadNetLayer = new AMap.TileLayer.RoadNet({
+				map: map,
+				zIndex: 999
+			}); //实例化路网图层
+
+			function setTileLayer() {
+				//var tileUrl = "https://mt2.google.cn/vt/lyrs=y@142&hl=zh-CN&gl=CN&x=[x]&y=[y]&z=[z]&s=Galil";
+				var tileUrl = "https://mt2.google.cn/vt/lyrs=s@142&hl=zh-CN&gl=CN&x=[x]&y=[y]&z=[z]&s=Galil";
+				//var tileUrl="img/15.jpg";
+				var tileLayer = new AMap.TileLayer({
+					zIndex: 10,
+					tileUrl: tileUrl
+				});
+				tileLayer.setMap(map);
+				map.setFeatures(["bg"]);
+				roadNetLayer.show();
+				console.log(roadNetLayer);
+				//tileLayer.setTileUrl();
+				//var satellLayer = new AMap.TileLayer.Satellite({map:map,zIndex:10,tileSize:256}); //实例化卫星图
+				//console.log(satellLayer.getTiles());
+				//satellLayer.setMap(map); //在map中添加卫星图
+				//贴自定义图片
+				//				var imageLayer = new AMap.ImageLayer({
+				//					url: 'img/395_2.png ',
+				//					bounds: new AMap.Bounds(
+				//						[120.38719, 36.281176], [120.401201, 36.290254]
+				//					)
+				//				});
+				//				imageLayer.setMap(map);
+				//				var imageLayer = new AMap.ImageLayer({
+				//					url: 'img/hj.gif ',
+				//					bounds: new AMap.Bounds(
+				//						[120.395589, 36.286863], [120.396297, 36.2864]
+				//					)
+				//				});
+				//				imageLayer.setMap(map);
+			}
+
+			function roadHide() {
+				roadNetLayer.hide();
+			}
+
+			function setImgLayer() {
+				var tileUrl = "img/15.jpg";
+				var imageLayer = new AMap.ImageLayer({
+					url: tileUrl,
+					bounds: new AMap.Bounds(
+						[118.397665, 36.610915], [118.404286, 36.623168]
+					),
+					zooms: [15, 24]
+				});
+				map.setLayers([
+					new AMap.TileLayer(),
+					imageLayer
+				]);
+				lnglat = [118.4009755, 36.6170415];
+				//map.setLayers(new AMap.TileLayer(),imageLayer);
+				map.setCenter([118.4009755, 36.6170415]);
+			}
+			$("#scenicMarkerAdd").click(function() {
+				map.clearMap();
+				var markers = $("#point-array").val();
+				if(!markers) {
+					layer.alert('你不输入内容没法添加啊 ', {
+						icon: 2,
+						skin: 'layer-ext-moon '
+					});
+					return;
+				}
+				markers = eval("[" + markers + "]");
+				//console.log(markers);
+				for(var i = 0; i < markers.length; i++) {
+					var _data = markers[i];
+					if(i === 0) {
+						map.setCenter([_data[1], _data[2]]);
+					}
+					//console.log(markers[i]);
+					var _marker = new AMap.Marker({
+						map: map,
+						position: [_data[1], _data[2]],
+						draggable: false,
+						title: _data[0],
+						animation: "AMAP_ANIMATION_DROP",
+						label: {
+							content: (i * 1 + 1) + _data[0],
+							offset: (20, 0)
+						}
+					});
+				}
+			});
+
+			function getMapImgs() {
+				window.location = "get_map_imgs.html?marker=" + $("#point-array").val().replace(/ /g, "");
+			}
+			$(function() {
+				//console.log(lnglat);
+				setlnglatXY();
+			})
+		</script>
+	</body>
+
+</html>
