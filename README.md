@@ -1,8 +1,7 @@
-big_map_screenshot
-# a tool can screenshot base on big map with marks
 # 一个可以在地图上带标注点进行截图拼接工具
+# A tool can screenshot base on big map with marks
 
-[Demo](http://bms.greenwater.tech)
+[DEMO SITE](http://bms.greenwater.tech)
 
 ## 使用说明
 
@@ -31,4 +30,4 @@ big_map_screenshot
 5. 输入框中会出现连续的坐标数组。
 6. 如果需要重新修改，需要把坐标数组放入输入框，点击“重新赋值后刷新”。
 
-## demo_data.xls有更多的数据格式参考
+#### 更多的数据格式参考demo_data.xls
