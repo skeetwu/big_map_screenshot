@@ -58,7 +58,7 @@
 				rightLatLng
 			]
 			//map.setMaxBounds(bounds);
-			L.tileLayer("https://mt2.google.cn/vt/lyrs=y@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
+			L.tileLayer("https://gac-geo.googlecnapps.cn/maps/vt?lyrs=y@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
 				maxZoom: 20,
 				minZoom: 1,
 				bounds: bounds
@@ -70,7 +70,7 @@
 			//				minZoom: 1,
 			//				bounds: bounds
 			//			}).addTo(map);
-			var maskingTiles = new L.TileLayer("https://mt2.google.cn/vt/lyrs=m@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
+			var maskingTiles = new L.TileLayer("https://gac-geo.googlecnapps.cn/maps/vt?lyrs=m@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
 				maxZoom: 20,
 				minZoom: 1,
 				bounds: bounds
@@ -109,7 +109,7 @@
 
 			function creatMapZoom() {
 				clearMap();
-				L.tileLayer("https://mt2.google.cn/vt/lyrs=y@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
+				L.tileLayer("https://gac-geo.googlecnapps.cn/maps/vt?lyrs=y@142&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&s=Galil", {
 					maxZoom: 20,
 					minZoom: 1,
 					bounds: bounds
